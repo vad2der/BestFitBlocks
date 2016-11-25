@@ -9,8 +9,12 @@
   </head>
   <body>
     <div class=row>
-        <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2">
-            <h1>Legend</h1>  
+        <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
+            <h1>Legend</h1> 
+            <div class=button-group>
+                <button class="btn btn-default" id=loadDataFromURL>Load Data From URL</button>
+                <button class="btn btn-default" id=useLocalData>Use Local Data</button>
+            </div>
             <div id=list></div>
         </div>
         <div class="col-lg-8 col-md-8 col-sm-8 col-xs-8">
@@ -18,7 +22,6 @@
             <div id=message_box></div>
             <div id=canvas></div>
         </div>
-        <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2"></div>
     </div>
     <!-- Libraries -->
     <script src="lib/jquery-2.1.4.min.js"></script>
