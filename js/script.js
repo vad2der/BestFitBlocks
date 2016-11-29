@@ -120,7 +120,7 @@ $(function () {
 	function actualProcess(){
 
 		refineDirection()
-		// sort by width
+		// sort by width for legend representation
 		data.boxes.sort(function (a, b) {
 		  	if (a.width > b.width) {
 			    return -1;
@@ -161,9 +161,7 @@ $(function () {
 		var boxes_separately = [];
 
 		Object.keys(boxes_by_group).forEach(function(b_key){
-			//console.log(b_key, boxes_by_group[b_key].count);
-			for(b_ind=0; b_ind < boxes_by_group[b_key].count; b_ind++){
-				//console.log(boxes_by_group[b_key].width, boxes_by_group[b_key].height, boxes_by_group[b_key].count);
+			for(b_ind=0; b_ind < boxes_by_group[b_key].count; b_ind++){				
 				boxes_separately.push( {'width': boxes_by_group[b_key].width, 'height': boxes_by_group[b_key].height});
 			};
 		});
@@ -176,15 +174,12 @@ $(function () {
 			tryToPlaceBox(elem);
 		});
 
+		//actual algorithm
 		function tryToPlaceBox(elem){
-
-			var arr = Object.keys(points_of_insertion).sort();
-			
+			var arr = Object.keys(points_of_insertion).sort();			
 			for(ind = 0; ind < arr.length-1; ind++){				
-				//console.log('!!!!!!!');
 				var poi_y = parseInt(arr[ind]);
-				var poi_x = parseInt(points_of_insertion[poi_y]);
-				//console.log(ind, arr[ind]);
+				var poi_x = parseInt(points_of_insertion[poi_y]);				
 				
 				// Check if elem fits
 				if((elem.width+poi_x <= 800) && (elem.height+poi_y <= parseInt(arr[ind+1]))){
@@ -197,16 +192,15 @@ $(function () {
 					if(Object.keys(points_of_insertion).indexOf(String(poi_y+elem.height)) == -1){
 						// Add new point of insertion
 						points_of_insertion[parseInt(poi_y+elem.height)] = parseInt(poi_x);
-						//console.log(points_of_insertion);
 					};
 					break;
 				};
 			
 			};
 		};
-		
+		//first canvas title
 		$('#first_canvas_title').text(height+" x "+width +" canvas, "+100*S_boxes/S+ " % of fill");
-		
+		//drafting boxes
 		var b = canvas.selectAll('rect')
 					.data(placed_boxes)
 					.enter()
@@ -221,7 +215,7 @@ $(function () {
     					.style('stroke-width', '1px')
     					.on("mouseover", handleMouseOver)
     					.on('mouseout', handleMouseOut);
-		
+		//mouseover handler
 		function handleMouseOver(d,i){
 			var thisUnderMouse = this
 			d3.select('#first_canvas').selectAll('rect')
@@ -234,7 +228,7 @@ $(function () {
 			d3.select(this)
 				.style("opacity", 1);
 		}
-
+		//mouseout handler
 		function handleMouseOut(d,i){		
 			d3.select('#first_canvas').selectAll('rect')			
 				.transition()
@@ -242,6 +236,7 @@ $(function () {
 				.style("opacity", 1);
 		}
 
+		//optimal field creation and representation
 		function createOptimalfield(){
 
 			var heights = Object.keys(points_of_insertion).map(x=>parseInt(x)).slice(0, -1);
@@ -251,7 +246,7 @@ $(function () {
 			
 			$('#second_canvas').width(optimal_width);
 			$('#second_canvas').height(optimal_height);
-			//d3.selectAll("svg").remove();
+			
 			// Append a group
 			canvas2 = d3.select('#second_canvas')
       				.append('svg')
@@ -270,14 +265,32 @@ $(function () {
     					.style('fill', function(d, i){return color(d.width/10);})
     					.style('stroke', 'black')
     					.style('stroke-width', '1px')
-    					.on("mouseover", handleMouseOver)
-    					.on('mouseout', handleMouseOut);
+    					.on("mouseover", handleMouseOver1)
+    					.on('mouseout', handleMouseOut1);
 
     		$('#second_canvas_title').text(optimal_height+" x "+optimal_width +" canvas, "+100*S_boxes/(optimal_width*optimal_height)+ " % of fill");
     		message("success",100*S_boxes/S+ " % of fill"+"   vs   "+100*S_boxes/(optimal_width*optimal_height)+ " % of fill")
     	};
+    	//mouseover handler
+    	function handleMouseOver1(d,i){
+			var thisUnderMouse = this
+			d3.select('#second_canvas').selectAll('rect')
+			.filter(function(d,i) {
+      			return (this !== thisUnderMouse);})
+			.transition()
+    		.duration(200)
+			.style("opacity", 0.2);
+
+			d3.select(this)
+				.style("opacity", 1);
+		}
+		//mouseout handler
+		function handleMouseOut1(d,i){		
+			d3.select('#second_canvas').selectAll('rect')			
+				.transition()
+    			.duration(200)
+				.style("opacity", 1);
+		}
     	createOptimalfield();
 	};
-
-
 });
