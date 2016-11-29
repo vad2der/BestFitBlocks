@@ -204,7 +204,7 @@ $(function () {
 			
 			};
 		};
-		message("success",100*S_boxes/S+ " % of fill")
+		
 		$('#first_canvas_title').text(height+" x "+width +" canvas, "+100*S_boxes/S+ " % of fill");
 		
 		var b = canvas.selectAll('rect')
@@ -274,6 +274,7 @@ $(function () {
     					.on('mouseout', handleMouseOut);
 
     		$('#second_canvas_title').text(optimal_height+" x "+optimal_width +" canvas, "+100*S_boxes/(optimal_width*optimal_height)+ " % of fill");
+    		message("success",100*S_boxes/S+ " % of fill"+"   vs   "+100*S_boxes/(optimal_width*optimal_height)+ " % of fill")
     	};
     	createOptimalfield();
 	};
