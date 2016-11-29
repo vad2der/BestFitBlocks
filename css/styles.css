@@ -11,12 +11,16 @@ ul li  div {
   min-width: 100%;
   width: 100%;
 }
-#canvas {
+#first_canvas, #second_canvas{
   width: 800px;
   height: 600px;
   border-style: solid;
   border-width: 1px;
-  margin: 1em auto 0 auto;
+  margin: 1em auto 4em auto;
+}
+#first_canvas_title, #second_canvas_title {
+  text-align: center;
+  font-size: 2em;
 }
 ul {
   list-style-type: none;

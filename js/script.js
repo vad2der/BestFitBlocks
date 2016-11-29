@@ -1,20 +1,22 @@
 $(function () {
 	var data;
+	var width, height;
+	var canvas;
 
 	//messaging
-function message(type,message_body){
-	var type_of_message = (type == "success" ? "alert alert-success": "alert alert-warning");
-	$('#message_box').text(message_body);
-	$('#message_box').addClass(type_of_message);
-	setTimeout(function(){						
-		$('#message_box').text("");
-		$('#message_box').removeClass(type_of_message);
-	}, 3000);
-};
+	function message(type,message_body){
+		var type_of_message = (type == "success" ? "alert alert-success": "alert alert-warning");
+		$('#message_box').text(message_body);
+		$('#message_box').addClass(type_of_message);
+		setTimeout(function(){						
+			$('#message_box').text("");
+			$('#message_box').removeClass(type_of_message);
+		}, 3000);
+	};
 
-	//variable to put array of blocks in
-var blocks = [];
-const color = d3.scale.category20();
+		//variable to put array of blocks in
+	var blocks = [];
+	const color = d3.scale.category20();
 
 	// data getter
 	function loadData() {
@@ -22,6 +24,9 @@ const color = d3.scale.category20();
   		).done(function(response) {
     		message("success","data loaded")    		
     		data = jQuery.parseJSON(response);
+    		height = data.maxheight;
+			width = data.maxwidth;	
+			drawCanvas();
     		actualProcess();  		
   		}).fail(function() {
     		message("warning","could not get data")
@@ -43,9 +48,25 @@ const color = d3.scale.category20();
 		 {"count": 20, "width": 8, "height": 30},
 		 {"count": 1, "width": 60, "height": 300}],
 		 "maxheight": 600, "maxwidth": 800};
+		height = data.maxheight;
+		width = data.maxwidth;
+		drawCanvas();
 		 $('body').ready(message("success","local data assigned"));
 		 actualProcess();
 	}
+
+	function drawCanvas(){
+		$('#first_canvas').width(width);
+		$('#first_canvas').height(height);
+		// clear previous d3 instances
+		d3.selectAll("svg").remove();
+		// Append a group
+		canvas = d3.select('#first_canvas')
+      				.append('svg')
+      				.attr('width', width)
+      				.attr('height', height);
+	}
+
 	//simple blocks demonstrator <ol><li>
 	function showBlocks(){
 		const height = $("#list").height();		
@@ -79,16 +100,6 @@ const color = d3.scale.category20();
     		.style('fill', '#1c1c23');
 	};	
 	
-	var height = 600;
-	var width = 800;
-		// clear previous d3 instances
-	d3.selectAll("svg").remove();
-		// Append a group
-	var canvas = d3.select('#canvas')
-      				.append('svg')
-      				.attr('width', width)
-      				.attr('height', height);	
-
 	function refineDirection(){
 		var result = [];
 		for (var ind in data.boxes){
@@ -107,6 +118,7 @@ const color = d3.scale.category20();
 	//data.boxes = mergeSort(data.boxes);
 	
 	function actualProcess(){
+
 		refineDirection()
 		// sort by width
 		data.boxes.sort(function (a, b) {
@@ -125,9 +137,11 @@ const color = d3.scale.category20();
 	};
 
 	var boxes_by_group;
+
+	var points_of_insertion = {0: 0, 600: 0}; //format is {y: x}
+
 	function create_coord(){
-		var points_of_insertion = {0: 0, 600: 800}; //format is {y: x}
-		
+				
 		boxes_by_group = data.boxes;
 		// sort by height
 		boxes_by_group.sort(function (a, b) {
@@ -191,8 +205,8 @@ const color = d3.scale.category20();
 			};
 		};
 		message("success",100*S_boxes/S+ " % of fill")
-		console.log(100*S_boxes/S+ " %");
-		// console.log(placed_boxes);
+		$('#first_canvas_title').text(height+" x "+width +" canvas, "+100*S_boxes/S+ " % of fill");
+		
 		var b = canvas.selectAll('rect')
 					.data(placed_boxes)
 					.enter()
@@ -208,27 +222,61 @@ const color = d3.scale.category20();
     					.on("mouseover", handleMouseOver)
     					.on('mouseout', handleMouseOut);
 		
-	};
-
-	function handleMouseOver(d,i){
-		var thisUnderMouse = this
-		d3.select('#canvas').selectAll('rect')
+		function handleMouseOver(d,i){
+			var thisUnderMouse = this
+			d3.select('#first_canvas').selectAll('rect')
 			.filter(function(d,i) {
       			return (this !== thisUnderMouse);})
 			.transition()
     		.duration(200)
 			.style("opacity", 0.2);
 
-		d3.select(this)
-			.style("opacity", 1);
-	}
+			d3.select(this)
+				.style("opacity", 1);
+		}
 
-	function handleMouseOut(d,i){		
-		d3.select('#canvas').selectAll('rect')			
-			.transition()
-    		.duration(200)
-			.style("opacity", 1);
+		function handleMouseOut(d,i){		
+			d3.select('#first_canvas').selectAll('rect')			
+				.transition()
+    			.duration(200)
+				.style("opacity", 1);
+		}
 
-	}
+		function createOptimalfield(){
+
+			var heights = Object.keys(points_of_insertion).map(x=>parseInt(x)).slice(0, -1);
+			var widths = Object.values(points_of_insertion).map(x=>parseInt(x));
+			var optimal_height = Math.max.apply(Math, heights);
+			var optimal_width = Math.max.apply(Math, widths);
+			
+			$('#second_canvas').width(optimal_width);
+			$('#second_canvas').height(optimal_height);
+			//d3.selectAll("svg").remove();
+			// Append a group
+			canvas2 = d3.select('#second_canvas')
+      				.append('svg')
+      				.attr('width', optimal_width)
+      				.attr('height', optimal_height);
+
+			var b2 = canvas2.selectAll('rect')
+					.data(placed_boxes)
+					.enter()
+					.append('rect');
+
+					b2.attr("y", function(d){return d.y;})
+    					.attr("x", function(d){return d.x;})
+	    				.attr("width", function(d){return d.width;})
+						.attr("height", function(d){return d.height;})
+    					.style('fill', function(d, i){return color(d.width/10);})
+    					.style('stroke', 'black')
+    					.style('stroke-width', '1px')
+    					.on("mouseover", handleMouseOver)
+    					.on('mouseout', handleMouseOut);
+
+    		$('#second_canvas_title').text(optimal_height+" x "+optimal_width +" canvas, "+100*S_boxes/(optimal_width*optimal_height)+ " % of fill");
+    	};
+    	createOptimalfield();
+	};
+
 
 });
