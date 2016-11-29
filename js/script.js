@@ -67,7 +67,9 @@ const color = d3.scale.category20();
         legend.append('svg:rect')
     		.attr('width', d => d.width)
     		.attr('height', d=> d.height)
-    		.style('fill', (d,i) => color(d.width/10));
+    		.style('fill', (d,i) => color(d.width/10))
+    		.style('stroke', 'black')
+    		.style('stroke-width', '1px');
 
     	legend.append('svg:text')
     		.data(data.boxes)
@@ -124,7 +126,7 @@ const color = d3.scale.category20();
 
 	var boxes_by_group;
 	function create_coord(){
-		var points_of_insertion = {0: 0}; //format is {y: x}
+		var points_of_insertion = {0: 0, 600: 800}; //format is {y: x}
 		
 		boxes_by_group = data.boxes;
 		// sort by height
@@ -142,50 +144,91 @@ const color = d3.scale.category20();
 		var S_boxes = 0; //area of inserted boxws
 		var S = height*width; //area of canvas		
 
-		var boxes_separately = {};
-		for(b_ind in boxes_by_group){
-			var new_arr = [];
-			var k = boxes_by_group[b_ind].height;			
-			boxes_separately[k] = new_arr;
-			for(var i=0;i<boxes_by_group[b_ind].count;i++){
-				var w = boxes_by_group[b_ind].width;
-				var h = boxes_by_group[b_ind].height;
-				//console.log(boxes_separately);
-				boxes_separately[k].push( {'width': w, 'height': h} );
+		var boxes_separately = [];
+
+		Object.keys(boxes_by_group).forEach(function(b_key){
+			//console.log(b_key, boxes_by_group[b_key].count);
+			for(b_ind=0; b_ind < boxes_by_group[b_key].count; b_ind++){
+				//console.log(boxes_by_group[b_key].width, boxes_by_group[b_key].height, boxes_by_group[b_key].count);
+				boxes_separately.push( {'width': boxes_by_group[b_key].width, 'height': boxes_by_group[b_key].height});
+			};
+		});
+		
+		var placed_boxes = [];
+		
+		boxes_separately.forEach(function(elem){			
+			elem.width = parseInt(elem.width);
+			elem.height = parseInt(elem.height);
+			tryToPlaceBox(elem);
+		});
+
+		function tryToPlaceBox(elem){
+
+			var arr = Object.keys(points_of_insertion).sort();
+			
+			for(ind = 0; ind < arr.length-1; ind++){				
+				//console.log('!!!!!!!');
+				var poi_y = parseInt(arr[ind]);
+				var poi_x = parseInt(points_of_insertion[poi_y]);
+				//console.log(ind, arr[ind]);
+				
+				// Check if elem fits
+				if((elem.width+poi_x <= 800) && (elem.height+poi_y <= parseInt(arr[ind+1]))){
+					// Add box to representation array with coordinates
+					placed_boxes.push({'height': elem.height, 'width': elem.width, 'x': poi_x, 'y': poi_y});
+					S_boxes += elem.height*elem.width;
+					// Update X for point of insertion
+					points_of_insertion[poi_y] = poi_x+elem.width;
+					// Check if height below already declared
+					if(Object.keys(points_of_insertion).indexOf(String(poi_y+elem.height)) == -1){
+						// Add new point of insertion
+						points_of_insertion[parseInt(poi_y+elem.height)] = parseInt(poi_x);
+						//console.log(points_of_insertion);
+					};
+					break;
+				};
+			
 			};
 		};
-
-		var start_x = 0, start_y =0;
-		var prev_x = 0, prev_y = 0;
-		Object.keys(boxes_separately).reverse().forEach(function(bs_key){
-				
-				for (var b_ind in boxes_separately[bs_key]){					
-					var elem = boxes_separately[bs_key][b_ind];
-					elem.x = start_x;
-					elem.y = start_y;
-					start_x += prev_x;
-					if(start_x > width){						
-						start_y += prev_y;
-						start_x = 0;
-					};
-					prev_y = elem.height;
-					prev_x = elem.width;
-				};
-				
-				var bs_key = canvas.selectAll('rect')
-					.data(boxes_separately[bs_key])
+		message("success",100*S_boxes/S+ " % of fill")
+		console.log(100*S_boxes/S+ " %");
+		// console.log(placed_boxes);
+		var b = canvas.selectAll('rect')
+					.data(placed_boxes)
 					.enter()
 					.append('rect');
 
-					bs_key.attr("y", function(d){return d.y;})
+					b.attr("y", function(d){return d.y;})
     					.attr("x", function(d){return d.x;})
 	    				.attr("width", function(d){return d.width;})
 						.attr("height", function(d){return d.height;})
     					.style('fill', function(d, i){return color(d.width/10);})
     					.style('stroke', 'black')
-    					.style('stroke-width', '2px');
-		});
+    					.style('stroke-width', '1px')
+    					.on("mouseover", handleMouseOver)
+    					.on('mouseout', handleMouseOut);
 		
 	};
+
+	function handleMouseOver(d,i){
+		var thisUnderMouse = this
+		d3.select('#canvas').selectAll('rect')
+			.filter(function(d,i) {
+      			return (this !== thisUnderMouse);})
+			.transition()
+    		.duration(200)
+			.style("opacity", 0.2);
+
+		d3.select(this)
+			.style("opacity", 1);
+	}
+
+	function handleMouseOut(d,i){		
+		d3.select('#canvas').selectAll('rect')			
+			.transition()
+    		.duration(200)
+			.style("opacity", 1);
+
+	}
 
 });
