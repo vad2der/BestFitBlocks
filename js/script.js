@@ -2,7 +2,7 @@ $(function () {
 	var data;
 	var width, height;
 	var canvas;
-
+	var points_of_insertion = {0: 0, 600: 0}; //format is {y: x}
 	//messaging
 	function message(type,message_body){
 		var type_of_message = (type == "success" ? "alert alert-success": "alert alert-warning");
@@ -25,7 +25,8 @@ $(function () {
     		message("success","data loaded")    		
     		data = jQuery.parseJSON(response);
     		height = data.maxheight;
-			width = data.maxwidth;	
+			width = data.maxwidth;
+			points_of_insertion = {0: 0, 600: 0}; //format is {y: x}
 			drawCanvas();
     		actualProcess();  		
   		}).fail(function() {
@@ -50,6 +51,7 @@ $(function () {
 		 "maxheight": 600, "maxwidth": 800};
 		height = data.maxheight;
 		width = data.maxwidth;
+		points_of_insertion = {0: 0, 600: 0}; //format is {y: x}
 		drawCanvas();
 		 $('body').ready(message("success","local data assigned"));
 		 actualProcess();
@@ -88,7 +90,7 @@ $(function () {
         legend.append('svg:rect')
     		.attr('width', d => d.width)
     		.attr('height', d=> d.height)
-    		.style('fill', (d,i) => color(d.width/10))
+    		.style('fill', (d,i) => color((Math.abs(d.width-d.height)+d.width+d.height)/100))
     		.style('stroke', 'black')
     		.style('stroke-width', '1px');
 
@@ -138,8 +140,6 @@ $(function () {
 
 	var boxes_by_group;
 
-	var points_of_insertion = {0: 0, 600: 0}; //format is {y: x}
-
 	function create_coord(){
 				
 		boxes_by_group = data.boxes;
@@ -182,20 +182,33 @@ $(function () {
 				var poi_x = parseInt(points_of_insertion[poi_y]);				
 				
 				// Check if elem fits
-				if((elem.width+poi_x <= 800) && (elem.height+poi_y <= parseInt(arr[ind+1]))){
+				if(elem.width+poi_x <= width && elem.height+poi_y <= parseInt(arr[ind+1])){
+					var obj = {};
+					// rotate if not first element in the row and fits within determined limits => does not impact a result for given set of boxes
+					if (poi_x > 0 && elem.height+poi_y < elem.width+poi_y && elem.width+poi_y <= parseInt(arr[ind+1])){
+						obj = {'height': elem.width, 'width': elem.height, 'x': poi_x, 'y': poi_y};
+						// Update X for point of insertion
+						points_of_insertion[poi_y] = poi_x+elem.height;
+						// Check if height below already declared
+						if(Object.keys(points_of_insertion).indexOf(String(poi_y+elem.width)) == -1){
+							// Add new point of insertion
+							points_of_insertion[parseInt(poi_y+elem.width)] = parseInt(poi_x);
+						};
+					}else{ // if going without rotation
+						obj = {'height': elem.height, 'width': elem.width, 'x': poi_x, 'y': poi_y};
+						// Update X for point of insertion
+						points_of_insertion[poi_y] = poi_x+elem.width;
+						// Check if height below already declared
+						if(Object.keys(points_of_insertion).indexOf(String(poi_y+elem.height)) == -1){
+							// Add new point of insertion
+							points_of_insertion[parseInt(poi_y+elem.height)] = parseInt(poi_x);
+						};
+					}
 					// Add box to representation array with coordinates
-					placed_boxes.push({'height': elem.height, 'width': elem.width, 'x': poi_x, 'y': poi_y});
-					S_boxes += elem.height*elem.width;
-					// Update X for point of insertion
-					points_of_insertion[poi_y] = poi_x+elem.width;
-					// Check if height below already declared
-					if(Object.keys(points_of_insertion).indexOf(String(poi_y+elem.height)) == -1){
-						// Add new point of insertion
-						points_of_insertion[parseInt(poi_y+elem.height)] = parseInt(poi_x);
-					};
-					break;
-				};
-			
+					placed_boxes.push(obj);
+					S_boxes += elem.height*elem.width;			
+					break;					
+				};			
 			};
 		};
 		//first canvas title
@@ -206,11 +219,11 @@ $(function () {
 					.enter()
 					.append('rect');
 
-					b.attr("y", function(d){return d.y;})
-    					.attr("x", function(d){return d.x;})
-	    				.attr("width", function(d){return d.width;})
-						.attr("height", function(d){return d.height;})
-    					.style('fill', function(d, i){return color(d.width/10);})
+					b.attr("y", d => d.y)
+    					.attr("x", d => d.x)
+	    				.attr("width", d => d.width)
+						.attr("height", d => d.height)
+    					.style('fill', d => color((Math.abs(d.width-d.height)+d.width+d.height)/100))
     					.style('stroke', 'black')
     					.style('stroke-width', '1px')
     					.on("mouseover", handleMouseOver)
@@ -258,11 +271,11 @@ $(function () {
 					.enter()
 					.append('rect');
 
-					b2.attr("y", function(d){return d.y;})
-    					.attr("x", function(d){return d.x;})
-	    				.attr("width", function(d){return d.width;})
-						.attr("height", function(d){return d.height;})
-    					.style('fill', function(d, i){return color(d.width/10);})
+					b2.attr("y", d => d.y)
+    					.attr("x", d => d.x)
+	    				.attr("width", d => d.width)
+						.attr("height", d => d.height)
+    					.style('fill', d => color((Math.abs(d.width-d.height)+d.width+d.height)/100))
     					.style('stroke', 'black')
     					.style('stroke-width', '1px')
     					.on("mouseover", handleMouseOver1)
